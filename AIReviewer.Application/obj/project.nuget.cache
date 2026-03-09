@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "cwAC+QLDk5A=",
+  "success": true,
+  "projectFilePath": "D:\\AI PR Reviewer API\\AIReviewer.Application\\AIReviewer.Application.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\iobillos\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\10.0.3\\microsoft.extensions.dependencyinjection.abstractions.10.0.3.nupkg.sha512",
+    "C:\\Users\\iobillos\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\10.0.3\\microsoft.extensions.logging.abstractions.10.0.3.nupkg.sha512",
+    "C:\\Users\\iobillos\\.nuget\\packages\\system.diagnostics.diagnosticsource\\10.0.3\\system.diagnostics.diagnosticsource.10.0.3.nupkg.sha512"
+  ],
+  "logs": []
+}

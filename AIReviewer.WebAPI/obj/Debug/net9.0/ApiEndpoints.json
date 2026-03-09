@@ -1,0 +1,18 @@
+[
+  {
+    "ContainingType": "AIReviewer.WebAPI.Controllers.WebhookController",
+    "Method": "HandleWebhook",
+    "RelativePath": "api/github/webhook",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "payload",
+        "Type": "AIReviewer.Application.DTOs.WebhookPayload",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
