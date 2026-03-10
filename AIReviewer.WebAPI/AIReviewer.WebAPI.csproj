@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>53c509a9-4dbf-4d83-8bdc-5f43064cde61</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,12 @@
   <ItemGroup>
     <ProjectReference Include="..\AIReviewer.Application\AIReviewer.Application.csproj" />
     <ProjectReference Include="..\AIReviewer.Infrastructure\AIReviewer.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\ai-reviewer\sop\**\*.md" Link="ai-reviewer\sop\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

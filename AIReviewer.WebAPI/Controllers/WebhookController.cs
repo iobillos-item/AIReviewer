@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Web;
 using AIReviewer.Application.DTOs;
 using AIReviewer.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -12,24 +13,30 @@ public class WebhookController : ControllerBase
     private readonly IPRReviewService _reviewService;
     private readonly IGitHubService _gitHubService;
     private readonly ILogger<WebhookController> _logger;
-
+    private ISopProvider _sopProvider;  
     public WebhookController(
         IPRReviewService reviewService,
         IGitHubService gitHubService,
-        ILogger<WebhookController> logger)
-    {
+        ILogger<WebhookController> logger, ISopProvider sopProvider)
+    {   
         _reviewService = reviewService;
         _gitHubService = gitHubService;
         _logger = logger;
+        _sopProvider = sopProvider;
     }
 
     [HttpPost("webhook")]
-    [Consumes("application/json", "application/x-www-form-urlencoded")]
     public async Task<IActionResult> HandleWebhook()
     {
-        // Read raw body to avoid model binding issues with GitHub's Content-Type
-        using var reader = new StreamReader(Request.Body);
+        // Enable buffering so the body stream can be re-read if middleware/content negotiation touched it
+        Request.EnableBuffering();
+        Request.Body.Position = 0;
+
+        using var reader = new StreamReader(Request.Body, leaveOpen: true);
         var body = await reader.ReadToEndAsync();
+
+        // GitHub may send webhooks as form-urlencoded with a "payload" field
+        body = ExtractJsonBody(body);
 
         var eventType = Request.Headers["X-GitHub-Event"].FirstOrDefault();
         _logger.LogInformation("Webhook received: event={EventType}", eventType);
@@ -110,4 +117,41 @@ public class WebhookController : ControllerBase
 
         return Ok(new { message = "Push review completed", reviews = results });
     }
+
+    private static string ExtractJsonBody(string body)
+    {
+        if (body.StartsWith("payload=", StringComparison.OrdinalIgnoreCase))
+        {
+            return HttpUtility.UrlDecode(body["payload=".Length..]);
+        }
+
+        // Try parsing as full form-urlencoded in case there are other fields
+        var parsed = HttpUtility.ParseQueryString(body);
+        var payload = parsed["payload"];
+        if (!string.IsNullOrEmpty(payload))
+        {
+            return payload;
+        }
+
+        return body;
+    }
+
+    //Used for testing the SOP provider and review service without needing to trigger actual webhooks
+    //[HttpGet("test")]
+    //public async Task<IActionResult> Test()
+    //{
+
+    //    var sop = await _sopProvider.GetSopContentAsync();
+
+
+    //    var repo = "iobillos-item/OpenClawAPI";
+    //    var prNumber = 2;
+    //    var result = await _reviewService.ReviewPullRequestAsync(repo, prNumber);
+    //    return Ok(new
+    //    {
+    //        message = "Test review completed",
+    //        summary = result.Summary,
+    //        violationCount = result.Violations.Count
+    //    });
+    //}
 }

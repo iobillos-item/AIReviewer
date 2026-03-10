@@ -38,21 +38,47 @@ public class OpenAiService : ILLMService
         };
 
         var json = JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync("v1/chat/completions", content);
-        response.EnsureSuccessStatusCode();
+        const int maxRetries = 3;
+        for (var attempt = 0; attempt <= maxRetries; attempt++)
+        {
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("v1/chat/completions", content);
 
-        var responseJson = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(responseJson);
+            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+            {
+                if (attempt == maxRetries)
+                {
+                    _logger.LogError("OpenAI rate limit exceeded after {MaxRetries} retries", maxRetries);
+                    response.EnsureSuccessStatusCode(); // throws
+                }
 
-        var result = doc.RootElement
-            .GetProperty("choices")[0]
-            .GetProperty("message")
-            .GetProperty("content")
-            .GetString() ?? string.Empty;
+                // Use Retry-After header if available, otherwise exponential backoff
+                var delay = response.Headers.RetryAfter?.Delta
+                    ?? TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
 
-        _logger.LogInformation("LLM completion received ({Length} chars)", result.Length);
-        return result;
+                _logger.LogWarning("Rate limited by OpenAI. Retrying in {Delay}s (attempt {Attempt}/{MaxRetries})",
+                    delay.TotalSeconds, attempt + 1, maxRetries);
+
+                await Task.Delay(2000);
+                continue;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            var responseJson = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(responseJson);
+
+            var result = doc.RootElement
+                .GetProperty("choices")[0]
+                .GetProperty("message")
+                .GetProperty("content")
+                .GetString() ?? string.Empty;
+
+            _logger.LogInformation("LLM completion received ({Length} chars)", result.Length);
+            return result;
+        }
+
+        throw new HttpRequestException("Unexpected retry loop exit");
     }
 }

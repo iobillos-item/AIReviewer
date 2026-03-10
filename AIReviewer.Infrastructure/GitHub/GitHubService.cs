@@ -68,7 +68,7 @@ public class GitHubService : IGitHubService
     public async Task<List<int>> GetPullRequestsForCommitAsync(string repo, string commitSha)
     {
         var response = await _httpClient.GetAsync($"repos/{repo}/commits/{commitSha}/pulls");
-        response.EnsureSuccessStatusCode();
+         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(json);
