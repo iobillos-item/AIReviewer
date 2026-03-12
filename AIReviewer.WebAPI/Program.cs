@@ -1,3 +1,4 @@
+using AIReviewer.Application.Agents;
 using AIReviewer.Application.Interfaces;
 using AIReviewer.Application.Services;
 using AIReviewer.Infrastructure.GitHub;
@@ -12,6 +13,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<IPRReviewService, PRReviewService>();
 builder.Services.AddScoped<ISopProvider, MarkdownSopProvider>();
 builder.Services.AddScoped<IPromptBuilder, PromptBuilder>();
+builder.Services.AddScoped<IReviewAggregator, ReviewAggregator>();
+
+// Multi-agent registration — add new agents here (Open/Closed Principle)
+builder.Services.AddScoped<ICodeReviewAgent, ArchitectureReviewAgent>();
+builder.Services.AddScoped<ICodeReviewAgent, SecurityReviewAgent>();
+builder.Services.AddScoped<ICodeReviewAgent, PerformanceReviewAgent>();
+builder.Services.AddScoped<ICodeReviewAgent, TestCoverageReviewAgent>();
 
 // HTTP clients for external APIs
 builder.Services.AddHttpClient<IGitHubService, GitHubService>();
@@ -28,7 +36,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-//app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
 

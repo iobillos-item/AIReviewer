@@ -137,21 +137,17 @@ public class WebhookController : ControllerBase
     }
 
     //Used for testing the SOP provider and review service without needing to trigger actual webhooks
-    //[HttpGet("test")]
-    //public async Task<IActionResult> Test()
-    //{
-
-    //    var sop = await _sopProvider.GetSopContentAsync();
-
-
-    //    var repo = "iobillos-item/OpenClawAPI";
-    //    var prNumber = 2;
-    //    var result = await _reviewService.ReviewPullRequestAsync(repo, prNumber);
-    //    return Ok(new
-    //    {
-    //        message = "Test review completed",
-    //        summary = result.Summary,
-    //        violationCount = result.Violations.Count
-    //    });
-    //}
+    [HttpPost("test")]
+    public async Task<IActionResult> Test()
+    {
+        var repo = "iobillos-item/OpenClawAPI";
+        var prNumber = 3;
+        var result = await _reviewService.ReviewPullRequestAsync(repo, prNumber);
+        return Ok(new
+        {
+            message = "Test review completed",
+            summary = result.Summary,
+            violationCount = result.Violations.Count
+        });
+    }
 }
