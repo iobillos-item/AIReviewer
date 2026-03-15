@@ -4,5 +4,5 @@ namespace AIReviewer.Application.Interfaces;
 
 public interface IReviewAggregator
 {
-    UnifiedReviewResult Aggregate(IEnumerable<AgentReviewResult> agentResults);
+    UnifiedReviewResult Aggregate(IEnumerable<AgentReviewResult> results);
 }

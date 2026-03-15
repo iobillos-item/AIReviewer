@@ -1,6 +1,5 @@
 using AIReviewer.Application.Interfaces;
 using AIReviewer.Application.Services;
-using AIReviewer.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -9,176 +8,135 @@ namespace AIReviewer.Application.Tests.Services;
 
 public class PRReviewServiceTests
 {
-    private readonly Mock<IGitHubService> _gitHubServiceMock;
-    private readonly Mock<ISopProvider> _sopProviderMock;
-    private readonly Mock<IReviewAggregator> _aggregatorMock;
-    private readonly Mock<ILogger<PRReviewService>> _loggerMock;
+    private readonly Mock<IGitHubService> _gitHubMock = new();
+    private readonly Mock<ILLMService> _llmMock = new();
+    private readonly Mock<ISopProvider> _sopMock = new();
+    private readonly Mock<IPromptBuilder> _promptMock = new();
+    private readonly IResponseParser _parser = new ResponseParser();
+    private readonly Mock<ILogger<PRReviewService>> _loggerMock = new();
+    private readonly PRReviewService _sut;
 
     private const string Repo = "owner/repo";
     private const int PrNumber = 42;
 
     public PRReviewServiceTests()
     {
-        _gitHubServiceMock = new Mock<IGitHubService>();
-        _sopProviderMock = new Mock<ISopProvider>();
-        _aggregatorMock = new Mock<IReviewAggregator>();
-        _loggerMock = new Mock<ILogger<PRReviewService>>();
+        _sut = new PRReviewService(
+            _gitHubMock.Object, _llmMock.Object, _sopMock.Object,
+            _promptMock.Object, _parser, _loggerMock.Object);
+    }
 
-        _gitHubServiceMock
-            .Setup(x => x.GetPullRequestDiffAsync(Repo, PrNumber))
-            .ReturnsAsync("some diff");
-        _sopProviderMock
-            .Setup(x => x.GetSopContentAsync())
-            .ReturnsAsync("sop rules");
-        _gitHubServiceMock
-            .Setup(x => x.PostPullRequestCommentAsync(Repo, PrNumber, It.IsAny<string>()))
+    private void SetupMocks(string aiResponse)
+    {
+        _gitHubMock.Setup(x => x.GetPullRequestDiffAsync(Repo, PrNumber)).ReturnsAsync("diff");
+        _sopMock.Setup(x => x.GetSopContentAsync()).ReturnsAsync("sop");
+        _promptMock.Setup(x => x.BuildReviewPrompt(It.IsAny<string>(), It.IsAny<string>())).Returns("prompt");
+        _llmMock.Setup(x => x.GetCompletionAsync(It.IsAny<string>())).ReturnsAsync(aiResponse);
+        _gitHubMock.Setup(x => x.PostPullRequestCommentAsync(Repo, PrNumber, It.IsAny<string>()))
             .Returns(Task.CompletedTask);
     }
 
-    private PRReviewService CreateService(params ICodeReviewAgent[] agents)
+    [Fact]
+    public async Task ReviewPullRequestAsync_WithViolations_ReturnsCorrectResult()
     {
-        return new PRReviewService(
-            _gitHubServiceMock.Object,
-            _sopProviderMock.Object,
-            agents,
-            _aggregatorMock.Object,
-            _loggerMock.Object);
+        SetupMocks("""
+            Summary
+            Found one issue.
+
+            Violations
+            File: Program.cs
+            Line: 10
+            Issue: Use const
+            Suggested Fix: Change var to const
+            Severity: Minor
+            """);
+
+        var result = await _sut.ReviewPullRequestAsync(Repo, PrNumber);
+
+        Assert.Equal("Found one issue.", result.Summary);
+        Assert.Single(result.Violations);
+        Assert.Equal("Program.cs", result.Violations[0].File);
+        Assert.Equal(10, result.Violations[0].Line);
+        Assert.Equal("Minor", result.Violations[0].Severity);
     }
 
     [Fact]
-    public async Task ReviewPullRequestAsync_ExecutesAllAgentsInParallel()
+    public async Task ReviewPullRequestAsync_NoViolations_ReturnsEmpty()
     {
-        // Arrange
-        var agent1 = CreateMockAgent("Architecture", new AgentReviewResult { AgentName = "Architecture", Summary = "Clean" });
-        var agent2 = CreateMockAgent("Security", new AgentReviewResult { AgentName = "Security", Summary = "Secure" });
+        SetupMocks("""
+            Summary
+            Code looks clean.
 
-        _aggregatorMock
-            .Setup(x => x.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
-            .Returns(new UnifiedReviewResult { OverallSummary = "All good" });
+            Violations
+            """);
 
-        var sut = CreateService(agent1.Object, agent2.Object);
+        var result = await _sut.ReviewPullRequestAsync(Repo, PrNumber);
 
-        // Act
-        await sut.ReviewPullRequestAsync(Repo, PrNumber);
-
-        // Assert
-        agent1.Verify(a => a.ReviewAsync("some diff", "sop rules"), Times.Once);
-        agent2.Verify(a => a.ReviewAsync("some diff", "sop rules"), Times.Once);
-    }
-
-    [Fact]
-    public async Task ReviewPullRequestAsync_PostsCommentAfterAggregation()
-    {
-        // Arrange
-        var agent = CreateMockAgent("Architecture", new AgentReviewResult { AgentName = "Architecture" });
-
-        _aggregatorMock
-            .Setup(x => x.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
-            .Returns(new UnifiedReviewResult { OverallSummary = "Summary" });
-
-        var sut = CreateService(agent.Object);
-
-        // Act
-        await sut.ReviewPullRequestAsync(Repo, PrNumber);
-
-        // Assert
-        _gitHubServiceMock.Verify(
-            x => x.PostPullRequestCommentAsync(Repo, PrNumber, It.IsAny<string>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task ReviewPullRequestAsync_AgentFailure_ContinuesWithOtherAgents()
-    {
-        // Arrange
-        var failingAgent = new Mock<ICodeReviewAgent>();
-        failingAgent.Setup(a => a.AgentName).Returns("Failing");
-        failingAgent.Setup(a => a.ReviewAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ThrowsAsync(new Exception("LLM timeout"));
-
-        var healthyAgent = CreateMockAgent("Security", new AgentReviewResult { AgentName = "Security", Summary = "OK" });
-
-        _aggregatorMock
-            .Setup(x => x.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
-            .Returns(new UnifiedReviewResult { OverallSummary = "Partial" });
-
-        var sut = CreateService(failingAgent.Object, healthyAgent.Object);
-
-        // Act
-        var result = await sut.ReviewPullRequestAsync(Repo, PrNumber);
-
-        // Assert — should not throw, healthy agent still executed
-        healthyAgent.Verify(a => a.ReviewAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
-        _gitHubServiceMock.Verify(
-            x => x.PostPullRequestCommentAsync(Repo, PrNumber, It.IsAny<string>()),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task ReviewPullRequestAsync_NoAgents_PostsEmptyReview()
-    {
-        // Arrange
-        _aggregatorMock
-            .Setup(x => x.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
-            .Returns(new UnifiedReviewResult { OverallSummary = "No agents" });
-
-        var sut = CreateService(); // no agents
-
-        // Act
-        var result = await sut.ReviewPullRequestAsync(Repo, PrNumber);
-
-        // Assert
-        Assert.Equal("No agents", result.Summary);
+        Assert.Equal("Code looks clean.", result.Summary);
         Assert.Empty(result.Violations);
     }
 
     [Fact]
-    public async Task ReviewPullRequestAsync_ReturnsAggregatedViolations()
+    public async Task ReviewPullRequestAsync_PostsComment()
     {
-        // Arrange
-        var violation = new ReviewViolation
-        {
-            AgentName = "Security",
-            File = "Auth.cs",
-            Line = 10,
-            Issue = "Hardcoded secret",
-            Severity = "Critical"
-        };
+        SetupMocks("Summary\nOk.\n\nViolations\n");
 
-        var agentResult = new AgentReviewResult
-        {
-            AgentName = "Security",
-            Summary = "Found issue",
-            Violations = [violation]
-        };
+        await _sut.ReviewPullRequestAsync(Repo, PrNumber);
 
-        var agent = CreateMockAgent("Security", agentResult);
-
-        _aggregatorMock
-            .Setup(x => x.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
-            .Returns(new UnifiedReviewResult
-            {
-                OverallSummary = "Issues found",
-                AgentResults = [agentResult]
-            });
-
-        var sut = CreateService(agent.Object);
-
-        // Act
-        var result = await sut.ReviewPullRequestAsync(Repo, PrNumber);
-
-        // Assert
-        Assert.Single(result.Violations);
-        Assert.Equal("Security", result.Violations[0].AgentName);
-        Assert.Equal("Hardcoded secret", result.Violations[0].Issue);
+        _gitHubMock.Verify(x => x.PostPullRequestCommentAsync(Repo, PrNumber, It.IsAny<string>()), Times.Once);
     }
 
-    private static Mock<ICodeReviewAgent> CreateMockAgent(string name, AgentReviewResult result)
+    [Fact]
+    public async Task ReviewPullRequestAsync_EmptyResponse_ReturnsEmptyResult()
     {
-        var mock = new Mock<ICodeReviewAgent>();
-        mock.Setup(a => a.AgentName).Returns(name);
-        mock.Setup(a => a.ReviewAsync(It.IsAny<string>(), It.IsAny<string>()))
-            .ReturnsAsync(result);
-        return mock;
+        SetupMocks(string.Empty);
+
+        var result = await _sut.ReviewPullRequestAsync(Repo, PrNumber);
+
+        Assert.Equal(string.Empty, result.Summary);
+        Assert.Empty(result.Violations);
+    }
+
+    [Fact]
+    public async Task ReviewPullRequestAsync_MultipleViolations_ParsesAll()
+    {
+        SetupMocks("""
+            Summary
+            Issues found.
+
+            Violations
+            File: A.cs
+            Line: 1
+            Issue: Issue A
+            Suggested Fix: Fix A
+            Severity: Critical
+            File: B.cs
+            Line: 2
+            Issue: Issue B
+            Suggested Fix: Fix B
+            Severity: Major
+            """);
+
+        var result = await _sut.ReviewPullRequestAsync(Repo, PrNumber);
+
+        Assert.Equal(2, result.Violations.Count);
+        Assert.Equal("Critical", result.Violations[0].Severity);
+        Assert.Equal("Major", result.Violations[1].Severity);
+    }
+
+    [Fact]
+    public async Task ReviewPullRequestAsync_CallsPromptBuilderWithCorrectArgs()
+    {
+        _gitHubMock.Setup(x => x.GetPullRequestDiffAsync(Repo, PrNumber)).ReturnsAsync("the-diff");
+        _sopMock.Setup(x => x.GetSopContentAsync()).ReturnsAsync("the-sop");
+        _promptMock.Setup(x => x.BuildReviewPrompt("the-sop", "the-diff")).Returns("built-prompt");
+        _llmMock.Setup(x => x.GetCompletionAsync("built-prompt")).ReturnsAsync("Summary\nOk.\n\nViolations\n");
+        _gitHubMock.Setup(x => x.PostPullRequestCommentAsync(Repo, PrNumber, It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        await _sut.ReviewPullRequestAsync(Repo, PrNumber);
+
+        _promptMock.Verify(x => x.BuildReviewPrompt("the-sop", "the-diff"), Times.Once);
+        _llmMock.Verify(x => x.GetCompletionAsync("built-prompt"), Times.Once);
     }
 }

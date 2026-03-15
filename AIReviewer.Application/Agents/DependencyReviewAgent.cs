@@ -3,14 +3,14 @@ using Microsoft.Extensions.Logging;
 
 namespace AIReviewer.Application.Agents;
 
-public class SecurityReviewAgent : BaseReviewAgent
+public class DependencyReviewAgent : BaseReviewAgent
 {
-    public override string AgentName => "Security";
+    public override string AgentName => "Dependency";
 
-    public SecurityReviewAgent(
+    public DependencyReviewAgent(
         ILLMService llmService,
         IPromptBuilder promptBuilder,
         IResponseParser responseParser,
-        ILogger<SecurityReviewAgent> logger)
+        ILogger<DependencyReviewAgent> logger)
         : base(llmService, promptBuilder, responseParser, logger) { }
 }

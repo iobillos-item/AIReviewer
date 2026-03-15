@@ -5,25 +5,35 @@ using AIReviewer.Infrastructure.GitHub;
 using AIReviewer.Infrastructure.LLM;
 using AIReviewer.Infrastructure.Persistence;
 using AIReviewer.Infrastructure.SOP;
+using AIReviewer.Infrastructure.Vector;
 using AIReviewer.WebAPI.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Application services
 builder.Services.AddScoped<IPRReviewService, PRReviewService>();
+builder.Services.AddScoped<IReviewCoordinator, ReviewCoordinator>();
+builder.Services.AddScoped<IDiffChunker, DiffChunker>();
+builder.Services.AddScoped<ISopContextRetriever, SopContextRetriever>();
+builder.Services.AddScoped<IReviewAggregator, ReviewAggregator>();
+builder.Services.AddScoped<IReviewCommentFormatter, ReviewCommentFormatter>();
 builder.Services.AddScoped<ISopProvider, MarkdownSopProvider>();
 builder.Services.AddScoped<IPromptBuilder, PromptBuilder>();
-builder.Services.AddScoped<IReviewAggregator, ReviewAggregator>();
+builder.Services.AddScoped<IResponseParser, ResponseParser>();
+builder.Services.AddScoped<ISopIngestionService, SopIngestionService>();
 
-// Multi-agent registration — add new agents here (Open/Closed Principle)
+// Multi-agent registration (Open/Closed: add new agents here without changing core)
 builder.Services.AddScoped<ICodeReviewAgent, ArchitectureReviewAgent>();
 builder.Services.AddScoped<ICodeReviewAgent, SecurityReviewAgent>();
 builder.Services.AddScoped<ICodeReviewAgent, PerformanceReviewAgent>();
 builder.Services.AddScoped<ICodeReviewAgent, TestCoverageReviewAgent>();
+builder.Services.AddScoped<ICodeReviewAgent, DependencyReviewAgent>();
 
-// HTTP clients for external APIs
+// Infrastructure
+builder.Services.AddScoped<IVectorStore, VectorStoreService>();
 builder.Services.AddHttpClient<IGitHubService, GitHubService>();
 builder.Services.AddHttpClient<ILLMService, OpenAiService>();
+builder.Services.AddHttpClient<IEmbeddingService, OpenAiEmbeddingService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();

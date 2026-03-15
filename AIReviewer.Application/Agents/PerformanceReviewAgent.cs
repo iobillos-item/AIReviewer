@@ -6,11 +6,11 @@ namespace AIReviewer.Application.Agents;
 public class PerformanceReviewAgent : BaseReviewAgent
 {
     public override string AgentName => "Performance";
-    protected override string AgentType => "Performance";
 
     public PerformanceReviewAgent(
         ILLMService llmService,
         IPromptBuilder promptBuilder,
+        IResponseParser responseParser,
         ILogger<PerformanceReviewAgent> logger)
-        : base(llmService, promptBuilder, logger) { }
+        : base(llmService, promptBuilder, responseParser, logger) { }
 }

@@ -5,12 +5,12 @@ namespace AIReviewer.Application.Agents;
 
 public class TestCoverageReviewAgent : BaseReviewAgent
 {
-    public override string AgentName => "Test Coverage";
-    protected override string AgentType => "TestCoverage";
+    public override string AgentName => "TestCoverage";
 
     public TestCoverageReviewAgent(
         ILLMService llmService,
         IPromptBuilder promptBuilder,
+        IResponseParser responseParser,
         ILogger<TestCoverageReviewAgent> logger)
-        : base(llmService, promptBuilder, logger) { }
+        : base(llmService, promptBuilder, responseParser, logger) { }
 }

@@ -10,19 +10,18 @@ namespace AIReviewer.WebAPI.Controllers;
 [Route("api/github")]
 public class WebhookController : ControllerBase
 {
-    private readonly IPRReviewService _reviewService;
+    private readonly IReviewCoordinator _coordinator;
     private readonly IGitHubService _gitHubService;
     private readonly ILogger<WebhookController> _logger;
-    private ISopProvider _sopProvider;  
-    public WebhookController(
-        IPRReviewService reviewService,
+
+    public WebhookController(     
+        IReviewCoordinator coordinator,
         IGitHubService gitHubService,
-        ILogger<WebhookController> logger, ISopProvider sopProvider)
-    {   
-        _reviewService = reviewService;
+        ILogger<WebhookController> logger)
+    {     
+        _coordinator = coordinator;
         _gitHubService = gitHubService;
         _logger = logger;
-        _sopProvider = sopProvider;
     }
 
     [HttpPost("webhook")]
@@ -69,13 +68,14 @@ public class WebhookController : ControllerBase
         if (string.IsNullOrEmpty(repo) || prNumber is null or 0)
             return BadRequest(new { error = "Missing repository or PR number" });
 
-        var result = await _reviewService.ReviewPullRequestAsync(repo, prNumber.Value);
+        var result = await _coordinator.ReviewAsync(repo, prNumber.Value);
 
         return Ok(new
         {
-            message = "Review completed",
-            summary = result.Summary,
-            violationCount = result.Violations.Count
+            message = "Multi-agent review completed",
+            summary = result.OverallSummary,
+            violationCount = result.Violations.Count,
+            agentCount = result.AgentResults.Count
         });
     }
 
@@ -106,12 +106,13 @@ public class WebhookController : ControllerBase
         foreach (var prNumber in prNumbers)
         {
             _logger.LogInformation("Reviewing PR #{PrNumber} triggered by push", prNumber);
-            var result = await _reviewService.ReviewPullRequestAsync(repo, prNumber);
+            var result = await _coordinator.ReviewAsync(repo, prNumber);
             results.Add(new
             {
                 prNumber,
-                summary = result.Summary,
-                violationCount = result.Violations.Count
+                summary = result.OverallSummary,
+                violationCount = result.Violations.Count,
+                agentCount = result.AgentResults.Count
             });
         }
 
@@ -142,12 +143,13 @@ public class WebhookController : ControllerBase
     {
         var repo = "iobillos-item/OpenClawAPI";
         var prNumber = 3;
-        var result = await _reviewService.ReviewPullRequestAsync(repo, prNumber);
+        var result = await _coordinator.ReviewAsync(repo, prNumber);
         return Ok(new
         {
-            message = "Test review completed",
-            summary = result.Summary,
-            violationCount = result.Violations.Count
+            message = "Test multi-agent review completed",
+            summary = result.OverallSummary,
+            violationCount = result.Violations.Count,
+            agentCount = result.AgentResults.Count
         });
     }
 }
