@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  pgvector:
+    image: pgvector/pgvector:pg17
+    container_name: aireviewer-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-P@ssw0rd0223}
+      POSTGRES_DB: ai_reviewer
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./AIReviewer.Infrastructure/Migrations/001_CreateSopEmbeddings.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_reviewer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  aireviewer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aireviewer-api
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # Override DB host to use Docker network name instead of localhost
+      ConnectionStrings__VectorDb: "Host=pgvector;Port=5432;Database=ai_reviewer;Username=postgres;Password=${DB_PASSWORD:-P@ssw0rd0223}"
+    depends_on:
+      pgvector:
+        condition: service_healthy
+
+volumes:
+  pgdata:

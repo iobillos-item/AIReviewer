@@ -141,15 +141,15 @@ public class WebhookController : ControllerBase
     [HttpPost("test")]
     public async Task<IActionResult> Test()
     {
-        var repo = "iobillos-item/OpenClawAPI";
-        var prNumber = 3;
-        var result = await _coordinator.ReviewAsync(repo, prNumber);
+     //   var repo = "iobillos-item/OpenClawAPI";
+     //   var prNumber = 3;
+     //   var result = await _coordinator.ReviewAsync(repo, prNumber);
         return Ok(new
         {
-            message = "Test multi-agent review completed",
-            summary = result.OverallSummary,
-            violationCount = result.Violations.Count,
-            agentCount = result.AgentResults.Count
+            message = "Test successful",
+            //summary = result.OverallSummary,
+            //violationCount = result.Violations.Count,
+            //agentCount = result.AgentResults.Count
         });
     }
 }

@@ -15,3 +15,4 @@ D:\AI PR Reviewer API\AIReviewer.Infrastructure\obj\Debug\net9.0\AIReviewer.Infr
 D:\AI PR Reviewer API\AIReviewer.Infrastructure\obj\Debug\net9.0\refint\AIReviewer.Infrastructure.dll
 D:\AI PR Reviewer API\AIReviewer.Infrastructure\obj\Debug\net9.0\AIReviewer.Infrastructure.pdb
 D:\AI PR Reviewer API\AIReviewer.Infrastructure\obj\Debug\net9.0\ref\AIReviewer.Infrastructure.dll
+D:\AI PR Reviewer API\AIReviewer.Infrastructure\obj\Debug\net9.0\AIReviewer.Infrastructure.sourcelink.json

@@ -262,6 +262,34 @@
           "buildTransitive/net8.0/_._": {}
         }
       },
+      "Npgsql/9.0.3": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
+        },
+        "compile": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Pgvector/0.3.0": {
+        "type": "package",
+        "dependencies": {
+          "Npgsql": "8.0.3"
+        },
+        "compile": {
+          "lib/net6.0/Pgvector.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/Pgvector.dll": {}
+        }
+      },
       "System.Diagnostics.DiagnosticSource/10.0.3": {
         "type": "package",
         "compile": {
@@ -757,6 +785,37 @@
         "useSharedDesignerContext.txt"
       ]
     },
+    "Npgsql/9.0.3": {
+      "sha512": "tPvY61CxOAWxNsKLEBg+oR646X4Bc8UmyQ/tJszL/7mEmIXQnnBhVJZrZEEUv0Bstu0mEsHZD5At3EO8zQRAYw==",
+      "type": "package",
+      "path": "npgsql/9.0.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net6.0/Npgsql.dll",
+        "lib/net6.0/Npgsql.xml",
+        "lib/net8.0/Npgsql.dll",
+        "lib/net8.0/Npgsql.xml",
+        "npgsql.9.0.3.nupkg.sha512",
+        "npgsql.nuspec",
+        "postgresql.png"
+      ]
+    },
+    "Pgvector/0.3.0": {
+      "sha512": "asa5XkgE3rXCNi5qHGavWZ5w+pmqWjjM1T5vN5VuPaKqV52h4TLiOM9ZJFofYgYtfhReo1QWe4NeD+hbv7ydfw==",
+      "type": "package",
+      "path": "pgvector/0.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.txt",
+        "README.md",
+        "lib/net6.0/Pgvector.dll",
+        "pgvector.0.3.0.nupkg.sha512",
+        "pgvector.nuspec"
+      ]
+    },
     "System.Diagnostics.DiagnosticSource/10.0.3": {
       "sha512": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A==",
       "type": "package",
@@ -802,7 +861,9 @@
       "AIReviewer.Domain >= 1.0.0",
       "Microsoft.Extensions.Configuration.Abstractions >= 10.0.3",
       "Microsoft.Extensions.Http >= 10.0.3",
-      "Microsoft.Extensions.Logging.Abstractions >= 10.0.3"
+      "Microsoft.Extensions.Logging.Abstractions >= 10.0.3",
+      "Npgsql >= 9.0.3",
+      "Pgvector >= 0.3.0"
     ]
   },
   "packageFolders": {
@@ -874,6 +935,14 @@
           "Microsoft.Extensions.Logging.Abstractions": {
             "target": "Package",
             "version": "[10.0.3, )"
+          },
+          "Npgsql": {
+            "target": "Package",
+            "version": "[9.0.3, )"
+          },
+          "Pgvector": {
+            "target": "Package",
+            "version": "[0.3.0, )"
           }
         },
         "imports": [
@@ -892,7 +961,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

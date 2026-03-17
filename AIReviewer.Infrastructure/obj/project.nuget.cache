@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "wTrHvB5y6WU=",
+  "dgSpecHash": "DHZ12i32S9I=",
   "success": true,
   "projectFilePath": "D:\\AI PR Reviewer API\\AIReviewer.Infrastructure\\AIReviewer.Infrastructure.csproj",
   "expectedPackageFiles": [
@@ -17,6 +17,8 @@
     "C:\\Users\\iobillos\\.nuget\\packages\\microsoft.extensions.options\\10.0.3\\microsoft.extensions.options.10.0.3.nupkg.sha512",
     "C:\\Users\\iobillos\\.nuget\\packages\\microsoft.extensions.options.configurationextensions\\10.0.3\\microsoft.extensions.options.configurationextensions.10.0.3.nupkg.sha512",
     "C:\\Users\\iobillos\\.nuget\\packages\\microsoft.extensions.primitives\\10.0.3\\microsoft.extensions.primitives.10.0.3.nupkg.sha512",
+    "C:\\Users\\iobillos\\.nuget\\packages\\npgsql\\9.0.3\\npgsql.9.0.3.nupkg.sha512",
+    "C:\\Users\\iobillos\\.nuget\\packages\\pgvector\\0.3.0\\pgvector.0.3.0.nupkg.sha512",
     "C:\\Users\\iobillos\\.nuget\\packages\\system.diagnostics.diagnosticsource\\10.0.3\\system.diagnostics.diagnosticsource.10.0.3.nupkg.sha512"
   ],
   "logs": []
