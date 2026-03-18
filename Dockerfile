@@ -10,7 +10,7 @@ COPY AIReviewer.WebAPI/AIReviewer.WebAPI.csproj AIReviewer.WebAPI/
 COPY AIReviewer.Application.Tests/AIReviewer.Application.Tests.csproj AIReviewer.Application.Tests/
 RUN dotnet restore
 
-# Copy everything and run tests
+# Copy everything and run tests.
 COPY . .
 RUN dotnet test AIReviewer.Application.Tests --no-restore --configuration Release
 

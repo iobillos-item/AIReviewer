@@ -232,14 +232,15 @@ git --version
 ### 3. Clone the Repository
 
 ```powershell
-git clone https://github.com/your-org/ai-reviewer.git
-cd ai-reviewer
+git clone https://github.com/iobillos-item/aireviewer.git
+cd aireviewer
 ```
 
 ### 4. Configure Environment Variables
 
 ```powershell
 # Copy the example env file
+# Make sure env.example file exist in the project root directory
 Copy-Item .env.example .env
 
 # Edit with notepad
