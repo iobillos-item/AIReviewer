@@ -87,15 +87,22 @@ public class GitHubReviewService : IGitHubReviewService
         sb.AppendLine();
         sb.AppendLine(violation.Issue);
 
-        if (fix is not null && !string.IsNullOrWhiteSpace(fix.SuggestedCode))
+        if (fix is not null && !string.IsNullOrWhiteSpace(fix.CodeSnippet))
         {
             sb.AppendLine();
-            sb.AppendLine("**Suggested Fix:**");
-            sb.AppendLine(fix.Explanation);
+            sb.AppendLine($"**Suggested Fix** (`{fix.FixType}`):");
             sb.AppendLine();
             sb.AppendLine("```suggestion");
-            sb.AppendLine(fix.SuggestedCode);
+            sb.AppendLine(fix.CodeSnippet);
             sb.AppendLine("```");
+            sb.AppendLine();
+            sb.AppendLine($"**Explanation:** {fix.Explanation}");
+
+            if (fix.FixType == FixType.FullFileRefactor && !string.IsNullOrWhiteSpace(fix.FullRefactorJustification))
+            {
+                sb.AppendLine();
+                sb.AppendLine($"⚠️ **Full refactor justification:** {fix.FullRefactorJustification}");
+            }
         }
         else if (!string.IsNullOrWhiteSpace(violation.SuggestedFix))
         {

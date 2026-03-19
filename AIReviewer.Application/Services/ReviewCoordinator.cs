@@ -85,7 +85,7 @@ public class ReviewCoordinator : IReviewCoordinator
         _logger.LogInformation("MetaReview: {Before} → {After} violations",
             rawUnified.Violations.Count, validatedViolations.Count);
 
-        // Step 8: Generate fixes for Critical/Major violations
+        // Step 8: Generate fixes for Critical/Major violations with FixType enforcement
         var chunkLookup = chunks.ToDictionary(c => c.FileName, StringComparer.OrdinalIgnoreCase);
         var fixes = new Dictionary<AgentViolation, AutoFixResult>();
 
@@ -95,6 +95,16 @@ public class ReviewCoordinator : IReviewCoordinator
             {
                 var chunk = chunkLookup.GetValueOrDefault(v.File) ?? new DiffChunk { FileName = v.File };
                 var fix = await _fixGenerator.GenerateFixAsync(v, chunk);
+
+                // Enforce: FullFileRefactor must have justification
+                if (fix.FixType == FixType.FullFileRefactor && string.IsNullOrWhiteSpace(fix.FullRefactorJustification))
+                {
+                    _logger.LogWarning("Rejected FullFileRefactor without justification for {File}:{Line}",
+                        v.File, v.Line);
+                    fix.CodeSnippet = string.Empty;
+                    fix.FixType = FixType.SmallSnippet;
+                }
+
                 return (Violation: v, Fix: fix);
             });
 

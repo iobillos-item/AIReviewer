@@ -13,15 +13,17 @@ public class WebhookController : ControllerBase
     private readonly IReviewCoordinator _coordinator;
     private readonly IGitHubService _gitHubService;
     private readonly ILogger<WebhookController> _logger;
-
+    private readonly IConfiguration _configuration;
     public WebhookController(     
         IReviewCoordinator coordinator,
         IGitHubService gitHubService,
-        ILogger<WebhookController> logger)
+        ILogger<WebhookController> logger,
+        IConfiguration configuration)
     {     
         _coordinator = coordinator;
         _gitHubService = gitHubService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost("webhook")]
@@ -141,15 +143,17 @@ public class WebhookController : ControllerBase
     [HttpPost("test")]
     public async Task<IActionResult> Test()
     {
-     //   var repo = "iobillos-item/OpenClawAPI";
-     //   var prNumber = 3;
-     //   var result = await _coordinator.ReviewAsync(repo, prNumber);
+           var repo = "iobillos-item/OpenClawAPI";
+           var prNumber = 3;
+         //  var result = await _coordinator.ReviewAsync(repo, prNumber);
         return Ok(new
         {
             message = "Test successful",
             //summary = result.OverallSummary,
             //violationCount = result.Violations.Count,
-            //agentCount = result.AgentResults.Count
+            //agentCount = result.AgentResults.Count,
+            giHubAccToken = _configuration["GitHub:AccessToken"] is not null ? "Configured" + _configuration["GitHub:AccessToken"] : "Not Configured",
+            openAIKey = _configuration["OpenAI:ApiKey"] is not null ? "Configured" + _configuration["OpenAI:ApiKey"] : "Not Configured"
         });
     }
 }

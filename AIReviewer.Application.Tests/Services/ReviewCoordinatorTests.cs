@@ -39,7 +39,7 @@ public class ReviewCoordinatorTests
             .ReturnsAsync((IEnumerable<AgentViolation> v) => v);
 
         _fixGenMock.Setup(f => f.GenerateFixAsync(It.IsAny<AgentViolation>(), It.IsAny<DiffChunk>()))
-            .ReturnsAsync(new AutoFixResult());
+            .ReturnsAsync(new AutoFixResult { FixType = FixType.SmallSnippet });
 
         _formatterMock.Setup(f => f.Format(It.IsAny<UnifiedReviewResult>())).Returns("comment");
 
@@ -197,5 +197,69 @@ public class ReviewCoordinatorTests
         _reviewServiceMock.Verify(r => r.PostInlineCommentAsync(
             It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>(),
             It.IsAny<AgentViolation>(), It.IsAny<AutoFixResult?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReviewAsync_FullFileRefactorWithoutJustification_ClearsCodeSnippet()
+    {
+        var chunk = new DiffChunk { FileName = "Test.cs", Content = "+ code" };
+        SetupDefaults(chunk);
+
+        var violations = new List<AgentViolation>
+        {
+            new() { AgentName = "Arch", File = "Test.cs", Line = 1, Issue = "Layer violation", Severity = "Critical" }
+        };
+
+        _aggregatorMock.Setup(a => a.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
+            .Returns(new UnifiedReviewResult { OverallSummary = "Done", Violations = violations });
+
+        // Return a FullFileRefactor without justification
+        _fixGenMock.Setup(f => f.GenerateFixAsync(It.IsAny<AgentViolation>(), It.IsAny<DiffChunk>()))
+            .ReturnsAsync(new AutoFixResult
+            {
+                FixType = FixType.FullFileRefactor,
+                CodeSnippet = "lots of code here",
+                FullRefactorJustification = null
+            });
+
+        await CreateSut(CreateAgent("TestAgent").Object).ReviewAsync("repo", 1);
+
+        // Verify inline comment was posted with cleared code (rejected fix)
+        _reviewServiceMock.Verify(r => r.PostInlineCommentAsync(
+            "repo", 1, "abc123",
+            It.IsAny<AgentViolation>(),
+            It.Is<AutoFixResult?>(f => f != null && string.IsNullOrEmpty(f.CodeSnippet) && f.FixType == FixType.SmallSnippet)),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ReviewAsync_FullFileRefactorWithJustification_KeepsFix()
+    {
+        var chunk = new DiffChunk { FileName = "Test.cs", Content = "+ code" };
+        SetupDefaults(chunk);
+
+        var violations = new List<AgentViolation>
+        {
+            new() { AgentName = "Arch", File = "Test.cs", Line = 1, Issue = "Layer violation", Severity = "Critical" }
+        };
+
+        _aggregatorMock.Setup(a => a.Aggregate(It.IsAny<IEnumerable<AgentReviewResult>>()))
+            .Returns(new UnifiedReviewResult { OverallSummary = "Done", Violations = violations });
+
+        _fixGenMock.Setup(f => f.GenerateFixAsync(It.IsAny<AgentViolation>(), It.IsAny<DiffChunk>()))
+            .ReturnsAsync(new AutoFixResult
+            {
+                FixType = FixType.FullFileRefactor,
+                CodeSnippet = "refactored code",
+                FullRefactorJustification = "Architecture violation across layers"
+            });
+
+        await CreateSut(CreateAgent("TestAgent").Object).ReviewAsync("repo", 1);
+
+        _reviewServiceMock.Verify(r => r.PostInlineCommentAsync(
+            "repo", 1, "abc123",
+            It.IsAny<AgentViolation>(),
+            It.Is<AutoFixResult?>(f => f != null && f.CodeSnippet == "refactored code")),
+            Times.Once);
     }
 }

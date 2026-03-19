@@ -8,6 +8,12 @@ public class AutoFixResult
     public string OriginalFile { get; set; } = string.Empty;
     public int Line { get; set; }
     public string Issue { get; set; } = string.Empty;
-    public string SuggestedCode { get; set; } = string.Empty;
+    public FixType FixType { get; set; } = FixType.SmallSnippet;
+    public string CodeSnippet { get; set; } = string.Empty;
     public string Explanation { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Required justification when FixType is FullFileRefactor.
+    /// </summary>
+    public string? FullRefactorJustification { get; set; }
 }

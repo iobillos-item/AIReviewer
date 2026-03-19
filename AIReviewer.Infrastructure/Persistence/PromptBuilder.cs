@@ -122,7 +122,7 @@ public class PromptBuilder : IPromptBuilder
     public string BuildAutoFixPrompt(AgentViolation violation, DiffChunk chunk)
     {
         return $"""
-            You are a senior developer generating a code fix suggestion.
+            You are a senior developer generating a minimal code fix suggestion.
             
             File: {violation.File}
             Line: {violation.Line}
@@ -133,11 +133,27 @@ public class PromptBuilder : IPromptBuilder
             Original code context:
             {chunk.Content}
             
-            Generate a concise fix. Include:
-            1. A brief explanation of what to change and why.
-            2. The corrected code in a fenced code block (```).
+            CRITICAL RULES:
+            - Only return the SMALLEST possible code snippet that fixes the issue.
+            - Do NOT rewrite the entire file unless absolutely necessary.
+            - Prefer minimal diff-style fixes showing only the changed lines.
+            - SmallSnippet (1-5 lines): Use for single-statement fixes.
+            - MultiLineSnippet (5-20 lines): Use for small method-level refactors.
+            - FullFileRefactor (20+ lines): Use ONLY when architectural changes require it.
             
-            Keep the fix minimal and focused on the specific issue.
+            Output format:
+            1. A brief explanation (1-2 sentences max).
+            2. A diff-style fix in a fenced code block:
+            
+            ```
+            --- Before
+            var query = "SELECT * FROM Users WHERE Id = " + id;
+            +++ After
+            var query = "SELECT * FROM Users WHERE Id = @id";
+            ```
+            
+            If the fix truly requires 20+ lines, add:
+            Justification: <why a full refactor is necessary>
             """;
     }
 

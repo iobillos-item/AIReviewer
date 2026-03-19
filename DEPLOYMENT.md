@@ -32,7 +32,7 @@ sudo chmod a+r /etc/apt/keyrings/docker.asc
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null"
 
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
@@ -54,10 +54,23 @@ sudo apt-get install -y git
 
 ### 3. Clone the Repository
 
+> **Note:** GitHub does not support password authentication on Linux.
+> When prompted for a password, use a **Personal Access Token (PAT)** instead.
+> To generate one:
+> 1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+> 2. Generate a new token with the `repo` scope
+> 3. Copy the token and use it as your password when cloning
+>
+> To avoid re-entering credentials every time, run this before cloning:
+> ```bash
+> git config --global credential.helper store
+> ```
+
 ```bash
-git clone https://github.com/your-org/ai-reviewer.git
-cd ai-reviewer
+git clone https://github.com/iobillos-item/AIReviewer.git
+cd AIReviewer
 ```
+
 
 ### 4. Configure Environment Variables
 
